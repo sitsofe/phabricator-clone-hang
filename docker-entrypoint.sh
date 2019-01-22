@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Ensure the hostname is all in lowercase
+SERVER_FQDN="$(echo "${SERVER_FQDN}" | tr '[:upper:]' '[:lower:]')"
 echo "ServerName ${SERVER_FQDN}" > /etc/apache2/conf-enabled/servername.conf
 
 /opt/phabricator/bin/config set diffusion.ssh-port 2222
