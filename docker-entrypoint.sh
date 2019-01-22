@@ -48,7 +48,7 @@ echo '{"transactions": [{"type":"vcs", "value": "git"},
           {"type":"publish", "value":false },
           {"type":"autoclose", "value":false },
           {"type":"callsign", "value":"LIBPHUTIL"}]
-      }' | \ /opt/arcanist/bin/arc call-conduit 'diffusion.repository.edit'
+      }' | /opt/arcanist/bin/arc call-conduit 'diffusion.repository.edit'
 # Grab PHID for repo
 REPO_PHID="$(echo '{ "names": [ "rLIBPHUTIL" ] }' | \
     arc call-conduit phid.lookup | jq -r '.response | .rLIBPHUTIL.phid')"
@@ -62,10 +62,10 @@ for phid in ${URI_PHIDS}; do
         "objectIdentifier": "'"${phid}"'" }' | \
     arc call-conduit diffusion.uri.edit
 done
-# Add GitHub URI (to import from)
+# Add upstream URI (to import from)
 echo '{ "transactions": [
     { "type": "repository", "value": "'"${REPO_PHID}"'" },
-    { "type": "uri", "value": "https://github.com/phacility/libphutil.git" },
+    { "type": "uri", "value": "https://secure.phabricator.com/source/libphutil.git" },
     { "type": "io", "value": "observe" }
   ]
 }' | arc call-conduit diffusion.uri.edit
@@ -77,7 +77,7 @@ echo '{
 
 # Import libphutil from GitHub
 echo "Waiting for libphutil import (this may take a while)..."
-echo -n "(see progress via http://${SERVER_FQDN}/diffusion/LIBPHUTIL/ ) "
+echo -n "(monitor progress via http://${SERVER_FQDN}/diffusion/LIBPHUTIL/ ):  "
 sp="/-\\|"
 while true; do
     # Check import state
@@ -98,22 +98,16 @@ ssh-keygen -R localhost
 ssh-keygen -R 127.0.0.1
 ssh-keyscan -H -p 2222 localhost >> ~/.ssh/known_hosts
 ssh-keyscan -H -p 2222 127.0.0.1 >> ~/.ssh/known_hosts
-#echo '{ "transactions": [
-#    { "type": "repository", "value": "'${REPO_PHID}'" },
-#    { "type": "uri", "value": "ssh://git@'${SERVER_FQDN}':2222/diffusion/LIBPHUTIL/libphutil.git" },
-#    { "type": "io", "value": "default" }
-#  ]
-#}' | arc call-conduit diffusion.uri.edit
 
 # Repeatedly clone the repo
 mkdir /dev/shm/gitclonehang
 cd /dev/shm/gitclonehang
-COUNT=0
 START_DATE="$(date)"
+count=0
 while true; do
-    COUNT=$((COUNT + 1))
+    count=$((count + 1))
     date
-    echo ${COUNT}
+    echo "Clone count: ${count}"
     rm -rf libphutil/
     git clone ssh://git@localhost:2222/diffusion/LIBPHUTIL/libphutil.git
 done

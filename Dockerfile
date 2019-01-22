@@ -68,11 +68,11 @@ ENV APACHE_PID_FILE ${APACHE_RUN_DIR}/apache2.pid
 ENV APACHE_LOCK_DIR /var/lock/apache2
 ENV APACHE_LOG_DIR /var/log/apache2
 
-#RUN     mkdir -p /opt/phabricator/conf/local /var/repo
+# FIXME
 #ADD     local.json /opt/phabricator/conf/local/local.json
 
 # Set up SSH server
-RUN  useradd git && \
+RUN  useradd -d /var/repo git && \
      usermod -p NP git && \
      echo "git ALL=(root) SETENV: NOPASSWD: /usr/bin/git-upload-pack, /usr/bin/git-receive-pack" >> /etc/sudoers && \
      cp -p /opt/phabricator/resources/sshd/sshd_config.phabricator.example /etc/ssh/sshd_config && \
