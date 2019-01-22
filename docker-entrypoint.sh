@@ -77,7 +77,7 @@ echo '{
 
 # Import libphutil from GitHub
 echo "Waiting for libphutil import (this may take a while)..."
-echo "(see progress via http://${SERVER_FQDN}/diffusion/LIBPHUTIL/ )"
+echo -n "(see progress via http://${SERVER_FQDN}/diffusion/LIBPHUTIL/ ) "
 sp="/-\\|"
 while true; do
     # Check import state
