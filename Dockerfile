@@ -68,9 +68,6 @@ ENV APACHE_PID_FILE ${APACHE_RUN_DIR}/apache2.pid
 ENV APACHE_LOCK_DIR /var/lock/apache2
 ENV APACHE_LOG_DIR /var/log/apache2
 
-# FIXME
-#ADD     local.json /opt/phabricator/conf/local/local.json
-
 # Set up SSH server
 RUN  useradd -d /var/repo git && \
      usermod -p NP git && \
