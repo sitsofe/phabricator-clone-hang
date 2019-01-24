@@ -34,11 +34,15 @@ RUN apt-get update && apt-get install -y \
     rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb \
         /var/cache/apt/*.bin || true
 
-# Grab the latest stable version of Phabricator and set up directories
+# Grab a particular stable version of Phabricator and set up directories
 RUN cd /opt && \
-    git clone --depth 1 --single-branch --branch stable https://github.com/phacility/libphutil.git && \
-    git clone --depth 1 --single-branch --branch stable https://github.com/phacility/arcanist.git && \
-    git clone --depth 1 --single-branch --branch stable https://github.com/phacility/phabricator.git
+    git clone --single-branch --branch stable https://github.com/phacility/libphutil.git && \
+    git clone --single-branch --branch stable https://github.com/phacility/arcanist.git && \
+    git clone --single-branch --branch stable https://github.com/phacility/phabricator.git
+RUN cd /opt/libphutil && git checkout f360228427fb29dc3dcd287ca98114947b454484 && \
+    cd /opt/arcanist && git checkout 92f7b2986cd726aefd51540acb295996d1a5a599 && \
+    cd /opt/phabricator && git checkout b9669edbbd41ca52537aeabff658cd8d2cf0fe82 && \
+    cd /opt
 
 # Set up Phabricator
 RUN mkdir -p /var/tmp/phd && \
