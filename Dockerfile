@@ -2,11 +2,9 @@ FROM centos:7
 
 RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 RUN yum install -y \
-    gdb \
     git \
     httpd \
     jq \
-    ltrace \
     openssh-server \
     postfix \
     php \
@@ -15,7 +13,6 @@ RUN yum install -y \
     php-mbstring \
     php-mysql \
     python2-pygments2 \
-    strace \
     sudo \
     which \
     \
@@ -23,10 +20,11 @@ RUN yum install -y \
     httpd-devel \
     make \
     php-devel \
-    php-pear
-
-# Build APC
-RUN yes '' | pecl install apc
+    php-pear \
+    \
+    gdb \
+    ltrace \
+    strace
 
 # Grab 2016-07-23 version of Phabricator et al. and set up directories
 RUN cd /opt && \
@@ -71,7 +69,7 @@ ENV APACHE_PID_FILE ${APACHE_RUN_DIR}/apache2.pid
 ENV APACHE_LOCK_DIR /var/lock/httpd
 ENV APACHE_LOG_DIR /var/log/httpd
 
-# Set up SSH server
+# Configure the SSH server
 RUN  useradd -d /var/repo git && \
      usermod -p NP git && \
      echo "git ALL=(root) SETENV: NOPASSWD: /usr/bin/git-upload-pack, /usr/bin/git-receive-pack" >> /etc/sudoers && \
@@ -79,6 +77,18 @@ RUN  useradd -d /var/repo git && \
      sed -i -e 's/vcs-user/git/g' -e 's!/usr/libexec!/usr/local/lib/phabricator!g' /etc/ssh/sshd_config && \
      mkdir -p /run/sshd && \
      /usr/sbin/sshd-keygen
+
+# Build and configure APC
+RUN pecl config-set php_ini /etc/php.ini && \
+    pear config-set php_ini /etc/php.ini && \
+    yes '' | pecl install apc && \
+    echo -e "\
+apc.write_lock=1\n\
+apc.slam_defense=0\n\
+apc.stat=0" >> /etc/php.ini
+
+# Create fixed root SSH key (don't do this in production!)
+RUN ssh-keygen -q -N "" -f /root/.ssh/id_rsa
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN ln -s /usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
