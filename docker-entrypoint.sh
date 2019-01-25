@@ -1,8 +1,5 @@
 #!/bin/bash
-
-# Ensure the hostname is all in lowercase
-SERVER_FQDN="$(echo "${SERVER_FQDN}" | tr '[:upper:]' '[:lower:]')"
-echo "ServerName ${SERVER_FQDN}" > /etc/apache2/conf-enabled/servername.conf
+echo "ServerName ${SERVER_FQDN}" > /etc/httpd/conf.d/servername.conf
 
 /opt/phabricator/bin/config set diffusion.ssh-port 2222
 /opt/phabricator/bin/config set diffusion.ssh-user git
@@ -19,7 +16,7 @@ echo "ServerName ${SERVER_FQDN}" > /etc/apache2/conf-enabled/servername.conf
 
 /opt/phabricator/bin/phd start
 /opt/phabricator/bin/phd launch 4 PhabricatorTaskmasterDaemon
-apachectl start
+/usr/sbin/httpd
 
 # Force the FQDN into hosts to workaround crazy things like the DNS servers
 # being used being Google's anycast ones...

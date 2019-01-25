@@ -1,41 +1,35 @@
-FROM ubuntu:18.04
+FROM centos:7
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG DEBCONF_NONINTERACTIVE_SEEN=true
-
-RUN apt-get update && apt-get install -y \
-    software-properties-common
-
-RUN add-apt-repository ppa:ondrej/php
-
-RUN apt-get update && apt-get install -y \
-    apache2 \
-    curl \
+RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+RUN yum install -y \
     gdb \
     git \
+    httpd \
     jq \
-    libapache2-mod-php5.6 \
-    libmysqlclient20 \
+    ltrace \
     openssh-server \
-    php-apcu \
-    php5.6 \
-    php5.6-apcu \
-    php5.6-cli \
-    php5.6-curl \
-    php5.6-gd \
-    php5.6-json \
-    php5.6-ldap \
-    php5.6-mbstring \
-    php5.6-mysql \
-    python-pygments \
+    postfix \
+    php \
+    php-gd \
+    php-ldap \
+    php-mbstring \
+    php-mysql \
+    python2-pygments2 \
+    strace \
     sudo \
-    vim-tiny && \
+    which \
     \
-    rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb \
-        /var/cache/apt/*.bin || true
+    gcc \
+    httpd-devel \
+    make \
+    php-devel \
+    php-pear
+
+# Build APC
+RUN yes '' | pecl install apc
 
 # Grab 2016-07-23 version of Phabricator et al. and set up directories
- RUN cd /opt && \
+RUN cd /opt && \
      git clone --single-branch --branch stable https://github.com/phacility/libphutil.git && \
      git clone --single-branch --branch stable https://github.com/phacility/arcanist.git && \
      git clone --single-branch --branch stable https://github.com/phacility/phabricator.git
@@ -52,13 +46,13 @@ RUN mkdir -p /var/tmp/phd && \
         /usr/local/lib/phabricator && \
     sed -i -e 's/vcs-user/git/g' -e 's|/path/to/phabricator|/opt/phabricator|g' \
         /usr/local/lib/phabricator/phabricator-ssh-hook.sh && \
-    sed -i -e 's/;opcache.validate_timestamps=1/opcache.validate_timestamps=0/' \
-           -e 's/post_max_size = 8M/post_max_size = 32M/' \
-        /etc/php/5.6/apache2/php.ini
+    sed -i -e 's/post_max_size = 8M/post_max_size = 32M/' \
+        /etc/php.ini
+
+#    sed -i -e 's/;opcache.validate_timestamps=1/opcache.validate_timestamps=0/' \
 
 # Configure Apache
-RUN a2enmod rewrite && \
-    echo "\
+RUN echo -e "\
 <VirtualHost *>\n\
   DocumentRoot /opt/phabricator/webroot\n\
   RewriteEngine on\n\
@@ -67,15 +61,15 @@ RUN a2enmod rewrite && \
 \n\
 <Directory /opt/phabricator/webroot>\n\
   Require all granted\n\
-</Directory>" > /etc/apache2/sites-available/phabricator.conf && \
-    ln -s ../sites-available/phabricator.conf /etc/apache2/sites-enabled/ && \
-    rm -f /etc/apache2/sites-enabled/000-default.conf
+</Directory>" > /etc/httpd/conf.d/phabricator.conf && \
+    rm -f /etc/httpd/conf.d/welcome.conf
+
 ENV APACHE_RUN_USER www-data
 ENV APACHE_RUN_GROUP www-data
-ENV APACHE_RUN_DIR /var/run/apache2
+ENV APACHE_RUN_DIR /var/run/httpd
 ENV APACHE_PID_FILE ${APACHE_RUN_DIR}/apache2.pid
-ENV APACHE_LOCK_DIR /var/lock/apache2
-ENV APACHE_LOG_DIR /var/log/apache2
+ENV APACHE_LOCK_DIR /var/lock/httpd
+ENV APACHE_LOG_DIR /var/log/httpd
 
 # Set up SSH server
 RUN  useradd -d /var/repo git && \
@@ -83,10 +77,8 @@ RUN  useradd -d /var/repo git && \
      echo "git ALL=(root) SETENV: NOPASSWD: /usr/bin/git-upload-pack, /usr/bin/git-receive-pack" >> /etc/sudoers && \
      cp -p /opt/phabricator/resources/sshd/sshd_config.phabricator.example /etc/ssh/sshd_config && \
      sed -i -e 's/vcs-user/git/g' -e 's!/usr/libexec!/usr/local/lib/phabricator!g' /etc/ssh/sshd_config && \
-     mkdir -p /run/sshd
-
-# Create SSH key
-RUN ssh-keygen -q -N "" -f /root/.ssh/id_rsa
+     mkdir -p /run/sshd && \
+     /usr/sbin/sshd-keygen
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN ln -s /usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
