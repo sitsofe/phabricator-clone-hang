@@ -34,14 +34,14 @@ RUN apt-get update && apt-get install -y \
     rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb \
         /var/cache/apt/*.bin || true
 
-# Grab 2017 Week 12 stable version of Phabricator and set up directories
-RUN cd /opt && \
-    git clone --single-branch --branch stable https://github.com/phacility/libphutil.git && \
-    git clone --single-branch --branch stable https://github.com/phacility/arcanist.git && \
-    git clone --single-branch --branch stable https://github.com/phacility/phabricator.git
-RUN cd /opt/libphutil && git checkout 75da31a282223f3ea2e480c06c8e0cce4799ef96 && \
-    cd /opt/arcanist && git checkout 6f1e2d80553a818d6b6d9a92b1f00d4f739113f3 && \
-    cd /opt/phabricator && git checkout 60aaee0ed3f5a1e4384ac7d7f2efd2c64cecbe44 && \
+# Grab 2016-07-23 version of Phabricator et al. and set up directories
+ RUN cd /opt && \
+     git clone --single-branch --branch stable https://github.com/phacility/libphutil.git && \
+     git clone --single-branch --branch stable https://github.com/phacility/arcanist.git && \
+     git clone --single-branch --branch stable https://github.com/phacility/phabricator.git
+RUN cd /opt/libphutil && git checkout 5fd2cf9d5d && \
+    cd /opt/arcanist && git checkout f1c45a3323 && \
+    cd /opt/phabricator && git checkout 9da15fd7ab && \
     cd /opt
 
 # Set up Phabricator
