@@ -6,26 +6,29 @@ ARG DEBCONF_NONINTERACTIVE_SEEN=true
 RUN apt-get update && apt-get install -y \
     apache2 \
     curl \
-    gdb \
     git \
-    jq \
-    libapache2-mod-php7.2 \
+    libapache2-mod-php \
     libmysqlclient20 \
     openssh-server \
+    php \
     php-apcu \
-    php7.2 \
-    php7.2-apcu \
-    php7.2-cli \
-    php7.2-curl \
-    php7.2-gd \
-    php7.2-json \
-    php7.2-ldap \
-    php7.2-mbstring \
-    php7.2-mysql \
+    php-cli \
+    php-curl \
+    php-gd \
+    php-json \
+    php-ldap \
+    php-mbstring \
+    php-mysql \
     python-pygments \
     sudo \
-    vim-tiny && \
     \
+    gdb \
+    jq \
+    ltrace \
+    strace \
+    vim-tiny \
+    \
+    && \
     rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb \
         /var/cache/apt/*.bin || true
 
