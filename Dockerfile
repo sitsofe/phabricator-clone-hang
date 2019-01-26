@@ -1,12 +1,7 @@
-FROM ubuntu:18.04
+FROM debian:8
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DEBCONF_NONINTERACTIVE_SEEN=true
-
-RUN apt-get update && apt-get install -y \
-    software-properties-common
-
-RUN add-apt-repository ppa:ondrej/php
 
 RUN apt-get update && apt-get install -y \
     apache2 \
@@ -14,19 +9,17 @@ RUN apt-get update && apt-get install -y \
     gdb \
     git \
     jq \
-    libapache2-mod-php5.6 \
-    libmysqlclient20 \
+    libapache2-mod-php5 \
+    libmysqlclient18 \
     openssh-server \
-    php-apcu \
-    php5.6 \
-    php5.6-apcu \
-    php5.6-cli \
-    php5.6-curl \
-    php5.6-gd \
-    php5.6-json \
-    php5.6-ldap \
-    php5.6-mbstring \
-    php5.6-mysql \
+    php5 \
+    php5-apcu \
+    php5-cli \
+    php5-curl \
+    php5-gd \
+    php5-json \
+    php5-ldap \
+    php5-mysql \
     python-pygments \
     sudo \
     vim-tiny && \
@@ -35,7 +28,7 @@ RUN apt-get update && apt-get install -y \
         /var/cache/apt/*.bin || true
 
 # Grab 2016-07-23 version of Phabricator et al. and set up directories
- RUN cd /opt && \
+RUN cd /opt && \
      git clone --single-branch --branch stable https://github.com/phacility/libphutil.git && \
      git clone --single-branch --branch stable https://github.com/phacility/arcanist.git && \
      git clone --single-branch --branch stable https://github.com/phacility/phabricator.git
@@ -54,7 +47,7 @@ RUN mkdir -p /var/tmp/phd && \
         /usr/local/lib/phabricator/phabricator-ssh-hook.sh && \
     sed -i -e 's/;opcache.validate_timestamps=1/opcache.validate_timestamps=0/' \
            -e 's/post_max_size = 8M/post_max_size = 32M/' \
-        /etc/php/5.6/apache2/php.ini
+        /etc/php5/apache2/php.ini
 
 # Configure Apache
 RUN a2enmod rewrite && \
@@ -83,7 +76,8 @@ RUN  useradd -d /var/repo git && \
      echo "git ALL=(root) SETENV: NOPASSWD: /usr/bin/git-upload-pack, /usr/bin/git-receive-pack" >> /etc/sudoers && \
      cp -p /opt/phabricator/resources/sshd/sshd_config.phabricator.example /etc/ssh/sshd_config && \
      sed -i -e 's/vcs-user/git/g' -e 's!/usr/libexec!/usr/local/lib/phabricator!g' /etc/ssh/sshd_config && \
-     mkdir -p /run/sshd
+     mkdir -p /run/sshd && \
+     chmod -R g-w /usr/local
 
 # Create SSH key
 RUN ssh-keygen -q -N "" -f /root/.ssh/id_rsa
