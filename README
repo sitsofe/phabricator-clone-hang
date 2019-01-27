@@ -1,0 +1,31 @@
+Dockerfile to build a Phabricator container that demonstrates git hanging when
+cloning from Phabricator over SSH (see
+https://discourse.phabricator-community.org/t/sporadic-git-cloning-hang-over-ssh/2233
+for details).
+
+The issue has been confirmed to exist in at least Phabricator stable releases
+between 2016 Week 28 - 2019 Week 3.
+
+A patch fixing the issue (which is due to select() sometimes returning with an
+EINTR error) is available on
+https://discourse.phabricator-community.org/t/sporadic-git-cloning-hang-over-ssh/2233/19?u=sitsofe
+.
+
+Container build and usage steps
+-------------------------------
+
+docker run --name mysql-phabricator -e MYSQL_ROOT_PASSWORD=githang \
+    -d mysql:5 \
+    mysqld --ft-min-word-len=3 --innodb-buffer-pool-size=256M \
+	--local-infile=0 --max_allowed_packet=32M \
+	--max-connections=1000 --sql-mode="STRICT_ALL_TABLES" 
+docker build -t sitsofe/phabricator-clone-hang:latest \
+    https://github.com/sitsofe/phabricator-clone-hang.git
+docker run --privileged --init -it -e SERVER_FQDN=$(hostname -f) -p 80:80 \
+    --link mysql-phabricator --name phabricator-clone-hang \
+    sitsofe/phabricator-clone-hang /bin/bash
+
+Follow the prompts. Eventually repeated git cloning will take place in a
+loop - allow this to continue until the hang occurs. Once it does, you can use
+docker exec -it phabricator-clone-hang /bin/bash
+from another TTY to enter the container and look around.

@@ -11,14 +11,14 @@ echo "ServerName ${SERVER_FQDN}" > /etc/apache2/conf-enabled/servername.conf
 /opt/phabricator/bin/config set phd.user root
 /opt/phabricator/bin/config set phabricator.base-uri "http://${SERVER_FQDN}/"
 
-# Reduce Phabricator warnings
+# Reduce Phabricator setup issues
 /opt/phabricator/bin/config set phabricator.timezone UTC
+/opt/phabricator/bin/config set pygments.enabled true
 
-/opt/phabricator/bin/config set phd.taskmasters 8
-/opt/phabricator/bin/storage upgrade --force
+/opt/phabricator/bin/storage upgrade --force || exit
 
 /opt/phabricator/bin/phd start
-/opt/phabricator/bin/phd launch 4 PhabricatorTaskmasterDaemon
+/opt/phabricator/bin/phd launch 8 PhabricatorTaskmasterDaemon
 apachectl start
 
 # Force the FQDN into hosts to workaround crazy things like the DNS servers
@@ -29,7 +29,7 @@ echo "Press enter to continue after Phabricator been configured via its web "
 echo -n "interface on http://${SERVER_FQDN}/ :"
 read -r
 
-# Show the user the public part of the SSH key
+# Show the user the public part of the root user's SSH key
 echo "Copy the following into a public SSH key for your user:"
 echo "--- ✂  cut here ✂ ---"
 cat /root/.ssh/id_rsa.pub
@@ -72,13 +72,13 @@ echo '{ "transactions": [
     { "type": "io", "value": "observe" }
   ]
 }' | arc call-conduit diffusion.uri.edit
-# Activate the repo
+# Activate the repo (and start the import process)
 echo '{
   "transactions": [ { "type": "status", "value": "active" } ],
   "objectIdentifier": "'"${REPO_PHID}"'"
 }' | arc call-conduit diffusion.repository.edit
 
-# Import libphutil from GitHub
+# Wait for the import to finish
 echo "Waiting for libphutil import (this may take a while)..."
 echo -n "(monitor progress via http://${SERVER_FQDN}/diffusion/LIBPHUTIL/ ):  "
 sp="/-\\|"
@@ -88,32 +88,33 @@ while true; do
     }' | arc call-conduit diffusion.repository.search | jq  -r '.response.data[0].fields.isImporting')
     if [[ "$IMPORTING" == "true" ]]; then
         printf "\b${sp:i++%${#sp}:1}"
-        sleep 5;
+        sleep 3;
     else
         break
     fi
 done
-printf '    \b\b\b\b'
+printf '    \b\b\b\b\n'
 echo 'Import complete!'
 
 /usr/sbin/sshd
 ssh-keygen -R localhost
 ssh-keygen -R 127.0.0.1
 ssh-keyscan -H -p 2222 localhost >> ~/.ssh/known_hosts
-ssh-keyscan -H -p 2222 127.0.0.1 >> ~/.ssh/known_hosts
 
 # Repeatedly clone the repo
 mkdir /dev/shm/gitclonehang
 cd /dev/shm/gitclonehang
 START_DATE="$(date)"
 count=0
-while true; do
+rc=0
+while [[ rc -eq 0 ]]; do
     count=$((count + 1))
-    date
-    echo "Clone count: ${count}"
+    echo "$(date) Clone count: ${count}"
     rm -rf libphutil/
     git clone ssh://git@localhost:2222/diffusion/LIBPHUTIL/libphutil.git
+    rc=$?
 done
-echo "${START_DATE}"
+echo "Started : ${START_DATE}"
+echo "Finished: $(date)"
 
 exec "$@"
